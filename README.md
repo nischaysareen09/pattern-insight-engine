@@ -45,6 +45,10 @@ cd app
 python3 app.py
 # Server listens on http://127.0.0.1:5000
 ```
+## Screenshots for demo
+
+<img width="1897" height="902" alt="SSONE" src="https://github.com/user-attachments/assets/b4c405f7-7541-4b2e-91bd-7d3101d28e5c" />
+<img width="1895" height="902" alt="SSTWO" src="https://github.com/user-attachments/assets/422cab6f-5f53-40c1-94d3-687924cdbde8" />
 
 ## Enabling the LLM
 
