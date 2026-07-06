@@ -1,3 +1,4 @@
+
 # Personal Pattern Insight Engine
 
 Takes a stream of a user's activity events (workouts, coding sessions,
@@ -148,3 +149,4 @@ Being upfront, per the assignment's instructions:
   time-series model (no seasonality, no trend decomposition). Documented
   as a deliberate scope cut for a 24-hour window; a fuller version would
   use something like STL decomposition or a rolling robust z-score.
+
