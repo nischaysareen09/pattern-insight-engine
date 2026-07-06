@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Log — Personal Pattern Insight Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #E8EDEC;
+    --paper-raised: #F6F8F7;
+    --ink: #16262B;
+    --ink-soft: #45585E;
+    --amber: #D98C2B;
+    --teal: #2F6F62;
+    --red: #B23A2E;
+    --line: #C7D0CE;
+    --radius: 3px;
+    --accent: #2F6F62;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a{ color: inherit; }
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-left{ display:flex; align-items:center; gap:14px; }
+  .avatar{
+    width:38px; height:38px; border-radius:50%;
+    background: var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces', serif; font-weight:600; font-size:16px;
+    flex-shrink:0; transition: background 0.2s ease;
+  }
+  .topbar h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size: 20px;
+    letter-spacing: 0.2px; margin:0;
+  }
+  .topbar .greeting{
+    font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-soft);
+    letter-spacing: 0.3px;
+  }
+  .userbar{ display:flex; align-items:center; gap:8px; }
+  .userbar input{
+    font-family:'JetBrains Mono', monospace; font-size:13px;
+    border:1px solid var(--line); background: var(--paper-raised);
+    padding:6px 9px; border-radius: var(--radius); color:var(--ink); width:140px;
+  }
+
+  .layout{
+    display:grid; grid-template-columns: 340px 1fr; gap:0;
+    min-height: calc(100vh - 68px);
+  }
+  @media (max-width: 860px){ .layout{ grid-template-columns: 1fr; } }
+
+  .panel{ padding: 26px 28px; }
+  .panel-left{ border-right: 1px solid var(--line); }
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:1px;
+    text-transform:uppercase; color: var(--teal); margin: 0 0 12px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{ content:''; width:6px; height:6px; background:var(--teal); display:inline-block; border-radius:1px; }
+
+  form.entry{ display:flex; flex-direction:column; gap:12px; margin-bottom: 26px; }
+  .field label{ display:block; font-size:11px; color:var(--ink-soft); margin-bottom:4px;
+    font-family:'JetBrains Mono', monospace; text-transform:uppercase; letter-spacing:0.4px; }
+  .field input{
+    width:100%; padding:9px 10px; font-size:14px; font-family:'Inter', sans-serif;
+    border:1px solid var(--line); border-radius: var(--radius); background: var(--paper-raised); color: var(--ink);
+  }
+  .field input::placeholder{ color: #9AA6A4; }
+  .field input:focus{ outline:2px solid var(--teal); outline-offset:1px; }
+  .field .hint{ font-size:10.5px; color:var(--ink-soft); margin-top:3px; font-family:'JetBrains Mono', monospace; }
+  .field .hint.error{ color: var(--red); }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  button{
+    font-family:'Inter', sans-serif; font-weight:600; font-size:13.5px;
+    border:none; border-radius: var(--radius); padding:11px 16px; cursor:pointer;
+    transition: transform 0.08s ease, box-shadow 0.15s ease;
+  }
+  button:active{ transform: translateY(1px); }
+  .btn-primary{ background: var(--ink); color: var(--paper); }
+  .btn-primary:hover{ background:#22383f; }
+  .btn-accent{ background: var(--amber); color: #241300; }
+  .btn-accent:hover{ box-shadow: 0 2px 10px rgba(217,140,43,0.4); }
+  .btn-accent:disabled{ opacity: 0.75; cursor: progress; }
+  .btn-full{ width:100%; }
+
+  .entries-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px;
+    max-height: 220px; overflow-y:auto; }
+  .entries-list li{
+    font-family:'JetBrains Mono', monospace; font-size:12px; color: var(--ink-soft);
+    border-left: 2px solid var(--line); padding: 4px 0 4px 10px;
+  }
+  .entries-list li b{ color:var(--ink); font-weight:500; }
+  .empty-note{ font-size:12.5px; color: var(--ink-soft); font-style:italic; }
+
+  /* --- overview stat bar (activities logged / longest streak / etc) --- */
+  .stat-bar{
+    display:grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--line); border: 1px solid var(--line); border-radius: var(--radius);
+    margin-bottom: 22px; overflow:hidden;
+  }
+  @media (max-width: 640px){ .stat-bar{ grid-template-columns: repeat(2, 1fr); } }
+  .stat-cell{ background: var(--paper-raised); padding: 12px 14px; }
+  .stat-cell .num{
+    font-family:'Fraunces', serif; font-weight:600; font-size: 22px; color: var(--ink); line-height:1.1;
+  }
+  .stat-cell .lbl{
+    font-family:'JetBrains Mono', monospace; font-size: 10px; text-transform:uppercase;
+    letter-spacing:0.4px; color: var(--ink-soft); margin-top:4px;
+  }
+
+  /* --- specimen dot-grid: the signature element --- */
+  .specimen{ margin-bottom: 10px; }
+  .specimen-row{ margin-bottom: 18px; }
+  .specimen-row .label{
+    font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--ink);
+    margin-bottom:6px; display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .specimen-row .label .streak{ color: var(--amber); font-weight:500; }
+  .dots{ display:flex; gap:3px; flex-wrap:wrap; }
+  .dot{
+    width:10px; height:10px; border-radius:50%;
+    border:1.4px solid var(--line); background:transparent;
+    position:relative;
+  }
+  .dot.filled{ background: var(--amber); border-color: var(--amber); }
+  .dot.anomaly{ background: var(--red); border-color: var(--red); }
+  .dot:hover::after{
+    content: attr(data-tip); position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:var(--paper); font-size:10px; padding:3px 6px; border-radius:2px;
+    white-space:nowrap; font-family:'JetBrains Mono',monospace; z-index:5;
+  }
+
+  .fieldnote{
+    margin-top: 22px; background: var(--paper-raised); border:1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 22px;
+  }
+  .fieldnote .heading{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
+  .fieldnote .heading h2{ font-family:'Fraunces', serif; font-style:italic; font-weight:500; font-size:17px; margin:0; }
+  .badge{
+    font-family:'JetBrains Mono', monospace; font-size:10.5px; padding:2px 7px; border-radius:20px;
+    border:1px solid var(--line); color: var(--ink-soft);
+  }
+  .badge.live{ border-color: var(--teal); color: var(--teal); }
+  .narrative{
+    font-family:'Fraunces', serif; font-size: 16.5px; line-height:1.55; color: var(--ink);
+  }
+  .placeholder-note{ color: var(--ink-soft); font-style: italic; font-family:'Fraunces', serif; }
+  .loading-note{
+    color: var(--ink-soft); font-family:'JetBrains Mono', monospace; font-size: 13px;
+  }
+  .highlights-label, .suggestion-label{
+    font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase;
+    letter-spacing:0.5px; color:var(--teal); margin: 14px 0 6px;
+  }
+  .highlights-label:first-child{ margin-top:0; }
+  ul.highlights{ margin:0 0 4px; padding-left: 20px; }
+  ul.highlights li{ margin-bottom:6px; }
+  .suggestion-text{ font-style: italic; }
+
+  .stats-toggle{ margin-top:14px; font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--teal);
+    cursor:pointer; text-decoration:underline; display:inline-block; }
+  pre.raw-stats{
+    font-family:'JetBrains Mono', monospace; font-size:11px; background:var(--ink); color:#d6e2df;
+    padding:14px; border-radius:var(--radius); overflow-x:auto; margin-top:10px; display:none;
+  }
+  .footer-note{ font-size:11px; color:var(--ink-soft); margin-top:26px; font-family:'JetBrains Mono', monospace;}
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="avatar" id="avatar">M</div>
+      <div>
+        <h1>Field Log</h1>
+        <div class="greeting" id="greeting">GOOD EVENING, ME</div>
+      </div>
+    </div>
+    <div class="userbar">
+      <label for="userId" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);">OBSERVER ID</label>
+      <input id="userId" value="me" spellcheck="false">
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel panel-left">
+      <div class="eyebrow">Log an observation</div>
+      <form class="entry" id="entryForm">
+        <div class="field">
+          <label for="activityType">Activity type</label>
+          <input id="activityType" placeholder="gym, coding, reading…" required>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="entryDate">Date (DD-MM-YYYY)</label>
+            <input id="entryDate" type="text" placeholder="06-07-2026" maxlength="10" inputmode="numeric">
+            <div class="hint" id="dateHint">&nbsp;</div>
+          </div>
+          <div class="field">
+            <label for="entryTime">Time (24h)</label>
+            <input id="entryTime" type="time">
+          </div>
+        </div>
+        <div class="field">
+          <label for="duration">Duration (minutes, optional)</label>
+          <input id="duration" type="number" min="0" step="1" placeholder="e.g. 45">
+        </div>
+        <button type="submit" class="btn-primary btn-full">+ Log it</button>
+      </form>
+
+      <div class="eyebrow">Recent entries</div>
+      <ul class="entries-list" id="entriesList">
+        <li class="empty-note">Nothing logged yet for this observer.</li>
+      </ul>
+
+      <div class="footer-note">Data is stored locally in this server's SQLite file. Nothing leaves your machine except the anonymized stats sent to the LLM to write the field note.</div>
+    </div>
+
+    <div class="panel">
+      <div class="eyebrow">Overview</div>
+      <div class="stat-bar" id="statBar">
+        <div class="stat-cell"><div class="num">–</div><div class="lbl">Activities logged</div></div>
+        <div class="stat-cell"><div class="num">–</div><div class="lbl">Longest streak</div></div>
+        <div class="stat-cell"><div class="num">–</div><div class="lbl">Avg daily activities</div></div>
+        <div class="stat-cell"><div class="num">–</div><div class="lbl">Most consistent</div></div>
+      </div>
+
+      <div class="eyebrow">Specimen: activity by day</div>
+      <div class="specimen" id="specimen">
+        <div class="empty-note">Log a few observations, then generate a field note to see patterns here.</div>
+      </div>
+
+      <button class="btn-accent" id="generateBtn">Generate field note</button>
+
+      <div class="fieldnote">
+        <div class="heading">
+          <h2 id="fieldnoteHeading">Field note</h2>
+          <span class="badge" id="llmBadge">not yet generated</span>
+        </div>
+        <div id="narrativeArea">
+          <div class="narrative placeholder-note" id="narrativeText">
+            Nothing yet — log a few observations and click "Generate field note."
+          </div>
+        </div>
+        <span class="stats-toggle" id="statsToggle" style="display:none;">show raw stats</span>
+        <pre class="raw-stats" id="rawStats"></pre>
+      </div>
+    </div>
+  </div>
+
+<script>
+const BASE = '';
+
+// ---------- date helpers: everything in the UI is DD-MM-YYYY ----------
+function pad(n){ return String(n).padStart(2, '0'); }
+
+function todayDMY(){
+  const d = new Date();
+  return `${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()}`;
+}
+function nowHM(){
+  const d = new Date();
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+// DD-MM-YYYY -> YYYY-MM-DD (for the backend/ISO timestamps)
+function dmyToIso(dmy){
+  const m = dmy.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (!m) return null;
+  const [, dd, mm, yyyy] = m;
+  const day = parseInt(dd, 10), month = parseInt(mm, 10);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return `${yyyy}-${mm}-${dd}`;
+}
+// YYYY-MM-DD -> DD-MM-YYYY (for displaying anything that came back from the server)
+function isoToDmy(isoDateStr){
+  const datePart = isoDateStr.slice(0, 10);
+  const [yyyy, mm, dd] = datePart.split('-');
+  return `${dd}-${mm}-${yyyy}`;
+}
+function isoTimestampToDmyHm(ts){
+  const datePart = ts.slice(0, 10);
+  const timePart = ts.slice(11, 16);
+  return `${isoToDmy(datePart)} ${timePart}`;
+}
+
+document.getElementById('entryDate').value = todayDMY();
+document.getElementById('entryTime').value = nowHM();
+
+document.getElementById('entryDate').addEventListener('input', () => {
+  const val = document.getElementById('entryDate').value;
+  const hint = document.getElementById('dateHint');
+  if (val.length === 10 && !dmyToIso(val)){
+    hint.textContent = 'use DD-MM-YYYY';
+    hint.classList.add('error');
+  } else {
+    hint.textContent = '\u00a0';
+    hint.classList.remove('error');
+  }
+});
+
+// ---------- personalization ----------
+function updatePersonalization(){
+  const uid = userId();
+  document.getElementById('avatar').textContent = uid.charAt(0).toUpperCase();
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 12 ? 'good morning' : (hour < 18 ? 'good afternoon' : 'good evening');
+  document.getElementById('greeting').textContent = `${timeGreeting}, ${uid}`.toUpperCase();
+  document.getElementById('fieldnoteHeading').textContent = `Field note for ${uid}`;
+  localStorage.setItem('field-log-observer-id', uid);
+}
+
+function userId(){ return document.getElementById('userId').value.trim() || 'me'; }
+
+document.getElementById('userId').addEventListener('input', () => {
+  updatePersonalization();
+});
+document.getElementById('userId').addEventListener('change', async () => {
+  await refreshActivities(userId());
+});
+
+// restore last-used observer id on load, if any
+const savedId = localStorage.getItem('field-log-observer-id');
+if (savedId) document.getElementById('userId').value = savedId;
+updatePersonalization();
+
+let localEntries = [];
+
+document.getElementById('entryForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const activity_type = document.getElementById('activityType').value.trim();
+  const dmy = document.getElementById('entryDate').value.trim() || todayDMY();
+  const iso = dmyToIso(dmy);
+  if (!iso){
+    document.getElementById('dateHint').textContent = 'use DD-MM-YYYY';
+    document.getElementById('dateHint').classList.add('error');
+    return;
+  }
+  const time = document.getElementById('entryTime').value || nowHM();
+  const durationRaw = document.getElementById('duration').value;
+
+  const event = { activity_type, timestamp: `${iso}T${time}:00` };
+  if (durationRaw) event.duration_minutes = parseFloat(durationRaw);
+
+  const resp = await fetch(`${BASE}/users/${encodeURIComponent(userId())}/activities`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({events:[event]})
+  });
+  if (!resp.ok){
+    alert('Could not save that entry — check the server terminal for details.');
+    return;
+  }
+  localEntries.unshift({...event});
+  renderEntries();
+  document.getElementById('activityType').value = '';
+  document.getElementById('duration').value = '';
+  document.getElementById('activityType').focus();
+});
+
+function renderEntries(){
+  const list = document.getElementById('entriesList');
+  if (localEntries.length === 0){
+    list.innerHTML = '<li class="empty-note">Nothing logged yet for this observer.</li>';
+    return;
+  }
+  list.innerHTML = localEntries.slice(0,12).map(e =>
+    `<li><b>${escapeHtml(e.activity_type)}</b> — ${isoTimestampToDmyHm(e.timestamp)}${e.duration_minutes ? ' · '+e.duration_minutes+' min' : ''}</li>`
+  ).join('');
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ---------- rotating loading messages while a field note is generating ----------
+const LOADING_MESSAGES = ['Analyzing your activity…', 'Finding patterns…', 'Generating observations…'];
+let loadingInterval = null;
+
+function startLoadingMessages(){
+  const el = document.getElementById('narrativeText');
+  el.classList.remove('placeholder-note');
+  el.classList.add('loading-note');
+  document.getElementById('narrativeArea').innerHTML = '<div class="narrative loading-note" id="narrativeText"></div>';
+  let i = 0;
+  const target = document.getElementById('narrativeText');
+  target.textContent = LOADING_MESSAGES[0];
+  loadingInterval = setInterval(() => {
+    i = (i + 1) % LOADING_MESSAGES.length;
+    target.textContent = LOADING_MESSAGES[i];
+  }, 700);
+}
+
+function stopLoadingMessages(){
+  if (loadingInterval){ clearInterval(loadingInterval); loadingInterval = null; }
+}
+
+document.getElementById('generateBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('generateBtn');
+  const uid = userId();
+  btn.disabled = true;
+  startLoadingMessages();
+  try{
+    const resp = await fetch(`${BASE}/users/${encodeURIComponent(uid)}/insights`, {method:'POST'});
+    stopLoadingMessages();
+    if (!resp.ok){
+      const err = await resp.json().catch(()=>({error:'unknown error'}));
+      document.getElementById('narrativeArea').innerHTML =
+        `<div class="narrative placeholder-note" id="narrativeText">${escapeHtml(err.error || 'Could not generate an insight yet — log more observations first.')}</div>`;
+      return;
+    }
+    const data = await resp.json();
+    renderFieldNote(data);
+
+    const badge = document.getElementById('llmBadge');
+    badge.textContent = data.llm_used ? data.llm_model : 'fallback (no LLM key set)';
+    badge.classList.toggle('live', !!data.llm_used);
+
+    document.getElementById('rawStats').textContent = JSON.stringify(data.stats, null, 2);
+    document.getElementById('statsToggle').style.display = 'inline-block';
+
+    renderSpecimen(data.stats);
+    renderStatBar(data.stats);
+    await refreshActivities(uid);
+  } finally {
+    stopLoadingMessages();
+    btn.disabled = false;
+    btn.textContent = 'Generate field note';
+  }
+});
+
+function renderFieldNote(data){
+  const area = document.getElementById('narrativeArea');
+  const highlights = Array.isArray(data.highlights) ? data.highlights : null;
+
+  if (!highlights || highlights.length === 0){
+    // backward-compatible plain-paragraph rendering
+    area.innerHTML = `<div class="narrative" id="narrativeText">${escapeHtml(data.narrative || '')}</div>`;
+    return;
+  }
+
+  let html = '<div class="highlights-label">Highlights</div>';
+  html += '<ul class="highlights">' + highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('') + '</ul>';
+  if (data.suggestion){
+    html += '<div class="suggestion-label">Suggestion</div>';
+    html += `<div class="narrative suggestion-text">${escapeHtml(data.suggestion)}</div>`;
+  }
+  area.innerHTML = html;
+}
+
+document.getElementById('statsToggle').addEventListener('click', () => {
+  const pre = document.getElementById('rawStats');
+  const toggle = document.getElementById('statsToggle');
+  const showing = pre.style.display === 'block';
+  pre.style.display = showing ? 'none' : 'block';
+  toggle.textContent = showing ? 'show raw stats' : 'hide raw stats';
+});
+
+async function refreshActivities(uid){
+  const resp = await fetch(`${BASE}/users/${encodeURIComponent(uid)}/activities`);
+  if (!resp.ok) return;
+  const data = await resp.json();
+  localEntries = data.events.slice().reverse();
+  renderEntries();
+}
+
+function renderSpecimen(stats){
+  const container = document.getElementById('specimen');
+  const types = stats.activity_types || {};
+  const keys = Object.keys(types);
+  if (keys.length === 0){
+    container.innerHTML = '<div class="empty-note">No activity types found yet.</div>';
+    return;
+  }
+
+  const today = new Date();
+  const days = 30;
+
+  container.innerHTML = keys.map(type => {
+    const d = types[type];
+    const anomalyDates = new Set((d.anomalous_days || []).map(a => a.date));
+    let dots = '';
+    for (let i = days - 1; i >= 0; i--){
+      const dt = new Date(today);
+      dt.setDate(today.getDate() - i);
+      const iso = dt.toISOString().slice(0,10);
+      const inRange = d.first_seen && d.last_seen && iso >= d.first_seen.slice(0,10) && iso <= d.last_seen.slice(0,10);
+      const isAnomaly = anomalyDates.has(iso);
+      const cls = isAnomaly ? 'dot anomaly' : (inRange ? 'dot filled' : 'dot');
+      const durationTip = d.avg_duration_minutes ? ` · avg ${d.avg_duration_minutes} min` : '';
+      const statusTip = isAnomaly ? ' · anomaly' : (inRange ? ' · completed' : '');
+      dots += `<span class="${cls}" data-tip="${isoToDmy(iso)}${durationTip}${statusTip}"></span>`;
+    }
+    return `
+      <div class="specimen-row">
+        <div class="label">
+          <span>${escapeHtml(type)}</span>
+          <span class="streak">${d.current_streak_days}d streak</span>
+        </div>
+        <div class="dots">${dots}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderStatBar(stats){
+  const bar = document.getElementById('statBar');
+  const types = stats.activity_types || {};
+  const keys = Object.keys(types);
+  const cells = bar.querySelectorAll('.stat-cell .num');
+
+  // Activities logged
+  cells[0].textContent = stats.total_events != null ? stats.total_events : '–';
+
+  // Longest streak (value + which activity)
+  if (keys.length){
+    const [bestStreakType, bestStreakData] = keys
+      .map(k => [k, types[k]])
+      .reduce((best, cur) => (cur[1].current_streak_days > best[1].current_streak_days ? cur : best));
+    cells[1].textContent = bestStreakData.current_streak_days != null ? `${bestStreakData.current_streak_days}d` : '–';
+    bar.querySelectorAll('.stat-cell')[1].querySelector('.lbl').textContent = `Longest streak (${bestStreakType})`;
+  } else {
+    cells[1].textContent = '–';
+  }
+
+  // Average daily activities: total events / calendar days spanned overall
+  // (earliest first_seen to latest last_seen across all activity types).
+  let avgDaily = null;
+  if (keys.length && stats.total_events){
+    const firstSeenDates = keys.map(k => new Date(types[k].first_seen.slice(0,10)));
+    const lastSeenDates = keys.map(k => new Date(types[k].last_seen.slice(0,10)));
+    const earliest = new Date(Math.min(...firstSeenDates));
+    const latest = new Date(Math.max(...lastSeenDates));
+    const daySpan = Math.max(1, Math.round((latest - earliest) / 86400000) + 1);
+    avgDaily = stats.total_events / daySpan;
+  }
+  cells[2].textContent = avgDaily ? avgDaily.toFixed(1) : '–';
+
+  // Most consistent = lowest time-of-day stddev_hours among activities with enough data
+  const consistent = keys
+    .map(k => [k, types[k].time_of_day])
+    .filter(([, tod]) => tod && tod.stddev_hours != null);
+  if (consistent.length){
+    const [bestType] = consistent.reduce((best, cur) => (cur[1].stddev_hours < best[1].stddev_hours ? cur : best));
+    cells[3].textContent = bestType;
+  } else {
+    cells[3].textContent = '–';
+  }
+}
+
+// load existing activities for the default (or restored) user on page load
+refreshActivities(userId());
+</script>
+</body>
+</html>
